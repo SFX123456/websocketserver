@@ -180,6 +180,7 @@ public class WebSocketServer {
             roomInfo.setMaxSize(size);
             roomInfo.setRoomId(room);
             roomInfo.setUserId(userId);
+            System.out.println("savinf room with name " + room);
             // 将房间储存起来
             rooms.put(room, roomInfo);
 
@@ -300,6 +301,7 @@ public class WebSocketServer {
         Map<String, Object> map = new HashMap<>();
 
         String[] cons = new String[roomUserBeans.size()];
+        System.out.println(roomUserBeans.size());
         for (int i = 0; i < roomUserBeans.size(); i++) {
             UserBean userBean = roomUserBeans.get(i);
             if (userBean.getUserId().equals(userID)) {
