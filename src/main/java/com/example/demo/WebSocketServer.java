@@ -195,7 +195,7 @@ public class WebSocketServer {
 
             // 发送给自己
             EventData send = new EventData();
-            send.setEventName("__peers");
+            send.setEventName("__suc_joined");
             Map<String, Object> map = new HashMap<>();
             map.put("connections", "");
             map.put("you", userId);
@@ -284,20 +284,26 @@ public class WebSocketServer {
 
         int maxSize = roomInfo.getMaxSize();
         CopyOnWriteArrayList<UserBean> roomUserBeans = roomInfo.getUserBeans();
-
         //房间已经满了
         if (roomUserBeans.size() >= maxSize) {
             return;
         }
         UserBean my = MemCons.userBeans.get(userID);
+        if(!roomUserBeans.contains(my)) {
+            System.out.println("user added");
+            roomUserBeans.add(my);
+        }
+        else {
+
+            System.out.println("user with the same id already exists in the room");
+        }
         // 1. 將我加入到房间
-        roomUserBeans.add(my);
         roomInfo.setUserBeans(roomUserBeans);
         rooms.put(room, roomInfo);
 
         // 2. 返回房间里的所有人信息
         EventData send = new EventData();
-        send.setEventName("__peers");
+        send.setEventName("__suc_joined");
         Map<String, Object> map = new HashMap<>();
 
         String[] cons = new String[roomUserBeans.size()];
@@ -330,11 +336,12 @@ public class WebSocketServer {
 
         // 3. 给房间里的其他人发送消息
         EventData newPeer = new EventData();
-        newPeer.setEventName("__new_peer");
+        newPeer.setEventName("__new_joined");
         Map<String, Object> sendMap = new HashMap<>();
         sendMap.put("userID", userID);
         newPeer.setData(sendMap);
         for (UserBean userBean : roomUserBeans) {
+            System.out.println("should send");
             if (userBean.getUserId().equals(userID)) {
                 continue;
             }
