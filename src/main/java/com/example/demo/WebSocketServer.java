@@ -341,10 +341,10 @@ public class WebSocketServer {
         sendMap.put("userID", userID);
         newPeer.setData(sendMap);
         for (UserBean userBean : roomUserBeans) {
-            System.out.println("should send");
             if (userBean.getUserId().equals(userID)) {
                 continue;
             }
+            System.out.println("should send " + userBean.getUserId());
             sendMsg(userBean, -1, gson.toJson(newPeer));
         }
 
