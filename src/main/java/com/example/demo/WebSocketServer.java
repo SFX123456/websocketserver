@@ -34,6 +34,8 @@ public class WebSocketServer {
     private String userId;
     private static Gson gson = new Gson();
     private static String avatar = "p1.jpeg";
+    
+    final private static int ROOMSIZE = 10;
 
 
     // 用户userId登录进来
@@ -47,11 +49,11 @@ public class WebSocketServer {
         if (device == 0) {
             userBean.setPhoneSession(session, device);
             userBean.setPhone(true);
-            LOG.info("Phone用户登陆:" + userBean.getUserId() + ",session:" + session.getId());
+            LOG.info("phoneregistered:" + userBean.getUserId() + ",session:" + session.getId());
         } else {
             userBean.setPcSession(session, device);
             userBean.setPhone(false);
-            LOG.info("PC用户登陆:" + userBean.getUserId() + ",session:" + session.getId());
+            LOG.info("pcregisterred:" + userBean.getUserId() + ",session:" + session.getId());
         }
         this.userId = userId;
 
@@ -122,9 +124,6 @@ public class WebSocketServer {
             return;
         }
         switch (data.getEventName()) {
-            case "__create":
-                createRoom(message, data.getData());
-                break;
             case "__invite":
                 invite(message, data.getData());
                 break;
@@ -157,6 +156,8 @@ public class WebSocketServer {
                 break;
             case "__disconnect":
                 disconnet(message, data.getData());
+            case "__does_group_exist":
+                disconnet(message, data.getData());
                 break;
             default:
                 break;
@@ -171,41 +172,20 @@ public class WebSocketServer {
 
         System.out.println(String.format("createRoom:%s ", room));
 
-        RoomInfo roomParam = rooms.get(room);
-        // 没有这个房间
-        if (roomParam == null) {
-            int size = (int) Double.parseDouble(String.valueOf(data.get("roomSize")));
-            // 创建房间
-            RoomInfo roomInfo = new RoomInfo();
-            roomInfo.setMaxSize(size);
-            roomInfo.setRoomId(room);
-            roomInfo.setUserId(userId);
-            System.out.println("savinf room with name " + room);
-            // 将房间储存起来
-            rooms.put(room, roomInfo);
 
+        int size = ROOMSIZE;
+        // 创建房间
+        RoomInfo roomInfo = new RoomInfo();
+        roomInfo.setMaxSize(size);
+        roomInfo.setRoomId(room);
+        roomInfo.setUserId(userId);
+        System.out.println("savinf room with name " + room);
 
-            CopyOnWriteArrayList<UserBean> copy = new CopyOnWriteArrayList<>();
-            
-            // 将自己加入到房间里
-            UserBean my = MemCons.userBeans.get(userId);
-          
-            copy.add(my);
-            rooms.get(room).setUserBeans(copy);
+        rooms.put(room, roomInfo);
 
-            // 发送给自己
-            EventData send = new EventData();
-            send.setEventName("__suc_joined");
-            Map<String, Object> map = new HashMap<>();
-            map.put("connections", "");
-            map.put("you", userId);
-            map.put("roomSize", size);
-            send.setData(map);
-            System.out.println(gson.toJson(send));
-            sendMsg(my, -1, gson.toJson(send));
-            System.out.println("created room");
-        }
+        CopyOnWriteArrayList<UserBean> copy = new CopyOnWriteArrayList<>();
 
+        rooms.get(room).setUserBeans(copy);
     }
 
     // 首次邀请
@@ -281,7 +261,11 @@ public class WebSocketServer {
         String userID = (String) data.get("userID");
 
         RoomInfo roomInfo = rooms.get(room);
-
+        if (roomInfo == null) {
+            createRoom(message,data);
+            System.out.println("created room");
+        }
+        roomInfo = rooms.get(room);
         int maxSize = roomInfo.getMaxSize();
         CopyOnWriteArrayList<UserBean> roomUserBeans = roomInfo.getUserBeans();
         //房间已经满了
@@ -356,7 +340,7 @@ public class WebSocketServer {
         String userId = (String) data.get("userID");
         UserBean userBean = MemCons.userBeans.get(userId);
         if (userBean == null) {
-            System.out.println("用户 " + userId + " 不存在");
+            System.out.println("transaudio user with id " + userId + " dfoesn ot exist");
             return;
         }
         sendMsg(userBean, -1, message);
@@ -367,7 +351,7 @@ public class WebSocketServer {
         String userId = (String) data.get("userID");
         UserBean userBean = MemCons.userBeans.get(userId);
         if (userBean == null) {
-            System.out.println("用户 " + userId + " 不存在");
+            System.out.println("disconnect  " + userId + " doesn ot exist");
             return;
         }
         sendMsg(userBean, -1, message);
@@ -385,8 +369,8 @@ public class WebSocketServer {
         String userId = (String) data.get("userID");
         UserBean userBean = MemCons.userBeans.get(userId);
         if (userBean == null) {
-            System.out.println("用户 " + userId + " 不存在");
-            return;
+            System.out.println("answer user  " + userId + " doesn ot exsist");
+        return;
         }
         sendMsg(userBean, -1, message);
 
@@ -397,9 +381,10 @@ public class WebSocketServer {
         String userId = (String) data.get("userID");
         UserBean userBean = MemCons.userBeans.get(userId);
         if (userBean == null) {
-            System.out.println("用户 " + userId + " 不存在");
+            System.out.println("ice candidate does not exist " + userId + " 不存在");
             return;
         }
+        System.out.println("goes here 1");
         sendMsg(userBean, -1, message);
     }
 
@@ -461,11 +446,12 @@ public class WebSocketServer {
             }
         } else {
             Session phoneSession = userBean.getPhoneSession();
-           
+            System.out.println("goes here 2"); 
 
             if (phoneSession != null) {
                 synchronized (object) {
 
+                    System.out.println("goes here 3");
                     phoneSession.getAsyncRemote().sendText(str);
 
 
@@ -473,14 +459,19 @@ public class WebSocketServer {
 
             }
               
-               
-                
-              
-           
+
             Session pcSession = userBean.getPcSession();
             if (pcSession != null) {
                 synchronized (object) {
-                    pcSession.getAsyncRemote().sendText(str);
+                    System.out.println("goes here 4");
+                    try {
+                        
+                        
+                        pcSession.getBasicRemote().sendText(str);
+                    }
+                    catch (Exception e) {
+                        System.out.println("could not write");
+                    }
                 }
             }
 
