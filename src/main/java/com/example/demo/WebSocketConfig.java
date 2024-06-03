@@ -24,4 +24,5 @@ public class WebSocketConfig extends WebMvcConfigurationSupport {
         // 绝对路径
         // registry.addResourceHandler("image/**").addResourceLocations("file:" + "image/");
     }
+   
 }
