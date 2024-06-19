@@ -357,18 +357,6 @@ public class WebSocketServer {
     // 发送offer
     private void offer(String message, Map<String, Object> data) {
         String userId = (String) data.get("userID");
-        String senddata = (String) data.get("data");
-        String messageFrom = (String) data.get("sendbackto");
-        Integer part = Integer.parseInt((String) data.get("part"));
-        if (part == 1) {
-            hashMap.put(messageFrom,senddata);
-            return;
-        }
-        String finalMessage = hashMap.remove(messageFrom);
-        finalMessage += senddata;
-        data.remove("data");
-        data.put("sdp",finalMessage);
-        data.remove("part");
         UserBean userBean = MemCons.userBeans.get(userId);
         sendMsg(userBean, -1, message);
     }
